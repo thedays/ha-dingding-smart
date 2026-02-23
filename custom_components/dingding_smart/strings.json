@@ -1,0 +1,21 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "配置钉钉智能门铃",
+        "description": "请输入您的钉钉智能账号信息",
+        "data": {
+          "username": "用户名/邮箱",
+          "password": "密码",
+          "server_region": "服务器区域"
+        }
+      }
+    },
+    "error": {
+      "auth_error": "用户名或密码错误",
+      "no_devices": "未找到设备，请确保设备已添加到账号",
+      "unknown_error": "未知错误，请检查网络连接"
+    },
+    "title": "钉钉智能门铃"
+  }
+}
