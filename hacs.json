@@ -1,0 +1,15 @@
+{
+  "name": "DingDing Smart Doorbell",
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "dingding_smart.zip",
+  "domains": ["dingding_smart"],
+  "homeassistant": "2023.1.0",
+  "iot_class": "Local Polling",
+  "persistent_directory": false,
+  "integration_type": "integration",
+  "requirements": ["aiohttp>=3.8.0", "voluptuous>=0.13.0"],
+  "codeowners": ["thedays"],
+  "country": "CN",
+  "hacs": "0.24.0"
+}
