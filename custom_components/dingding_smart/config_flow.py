@@ -1,5 +1,6 @@
 """钉钉智能门铃 - 配置流"""
 import logging
+from typing import Any
 import voluptuous as vol
 
 from homeassistant import config_entries

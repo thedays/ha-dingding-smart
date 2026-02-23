@@ -19,7 +19,7 @@ from typing import Any, Callable, Optional, Dict
 import aiohttp
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigEntryNotReady
 from homeassistant.const import (
     CONF_PASSWORD,
     CONF_USERNAME,
