@@ -217,28 +217,39 @@ class DingDingAPI:
             async with session.post(url, headers=headers, json=data) as resp:
                 if resp.status == 200:
                     result = await resp.json()
+                    _LOGGER.info("登录响应: %s", result)
+                    _LOGGER.info("响应类型: %s", type(result))
+                    _LOGGER.info("'token' in result: %s", "token" in result)
                     # 支持多种响应格式
-                    if result.get("code") == 0:
-                        # 格式1: {"code": 0, "data": {"token": "..."}}
-                        data = result.get("data", {})
-                        self.token = data.get("token")
-                        self.user_id = data.get("id")
-                        _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
-                        return True
-                    elif result.get("message") == "success":
-                        # 格式2: {"message": "success", "token": "..."}
-                        self.token = result.get("token")
-                        self.user_id = result.get("user_id")
-                        _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
-                        return True
-                    elif "token" in result:
-                        # 格式3: 直接包含token
-                        self.token = result.get("token")
-                        self.user_id = result.get("user_id") or result.get("id")
-                        _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
-                        return True
-                _LOGGER.error("登录失败: %s", await resp.text())
-                return False
+                    if isinstance(result, dict):
+                        if result.get("code") == 0:
+                            # 格式1: {"code": 0, "data": {"token": "..."}}
+                            data = result.get("data", {})
+                            self.token = data.get("token")
+                            self.user_id = data.get("id")
+                            _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
+                            return True
+                        elif result.get("message") == "success":
+                            # 格式2: {"message": "success", "token": "..."}
+                            self.token = result.get("token")
+                            self.user_id = result.get("user_id")
+                            _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
+                            return True
+                        elif "token" in result:
+                            # 格式3: 直接包含token
+                            self.token = result.get("token")
+                            self.user_id = result.get("user_id") or result.get("id")
+                            _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
+                            return True
+                        else:
+                            _LOGGER.error("登录响应格式不支持: %s", result)
+                            return False
+                    else:
+                        _LOGGER.error("登录响应不是字典类型: %s", result)
+                        return False
+                else:
+                    _LOGGER.error("登录失败: %s", await resp.text())
+                    return False
         except Exception as err:
             _LOGGER.error("登录异常: %s", err)
             return False
