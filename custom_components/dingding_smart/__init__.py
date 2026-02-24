@@ -40,6 +40,10 @@ CONF_SERVER_REGION = "server_region"
 CONF_DEVICE_UID = "device_uid"
 CONF_USER_ID = "user_id"
 CONF_IMEI = "imei"
+CONF_TOKEN = "token"
+CONF_REFLASH_KEY = "reflash_key"
+CONF_LOGOUT_STATUS = "logout_status"
+CONF_TIME = "time"
 
 # 服务器区域
 REGION_CN = "cn"
@@ -126,9 +130,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     device_uid = config.get(CONF_DEVICE_UID)
     user_id = config.get(CONF_USER_ID, 0)
     imei = config.get(CONF_IMEI)
+    token = config.get(CONF_TOKEN)
+    reflash_key = config.get(CONF_REFLASH_KEY)
+    logout_status = config.get(CONF_LOGOUT_STATUS)
+    time = config.get(CONF_TIME)
 
     # 创建API客户端
     api_client = DingDingAPI(username, password, region)
+    
+    # 从配置中加载持久化的token
+    if token:
+        api_client.token = token
+        api_client.user_id = user_id
+        api_client.reflash_key = reflash_key
+        api_client.logout_status = logout_status
+        api_client.time = time
+        _LOGGER.info("从配置中加载token成功, 用户ID: %s", user_id)
 
     # 创建推送监听器（使用逆向的实现）
     push_listener = PushListener(
@@ -154,6 +171,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
     # 尝试登录
     try:
         await coordinator.async_refresh()
+        
+        # 登录成功后更新配置，保存token
+        if api_client.token:
+            new_config = {
+                CONF_USER_ID: api_client.user_id,
+                CONF_TOKEN: api_client.token,
+                CONF_REFLASH_KEY: api_client.reflash_key,
+                CONF_LOGOUT_STATUS: api_client.logout_status,
+                CONF_TIME: api_client.time,
+            }
+            # 合并现有配置
+            updated_config = {**config, **new_config}
+            await entry.async_update_data(updated_config)
+            _LOGGER.info("token已持久化保存")
     except Exception as err:
         _LOGGER.error("登录失败: %s", err)
         raise ConfigEntryNotReady from err
@@ -186,6 +217,9 @@ class DingDingAPI:
         self.region = region
         self.token = None
         self.user_id = None
+        self.reflash_key = None
+        self.logout_status = None
+        self.time = None
         self._session: Optional[aiohttp.ClientSession] = None
 
     @property
@@ -226,6 +260,9 @@ class DingDingAPI:
                             # 只支持直接包含token的格式
                             self.token = result.get("token")
                             self.user_id = result.get("id")  # 使用id字段作为user_id
+                            self.reflash_key = result.get("reflash_key")
+                            self.logout_status = result.get("logout_status")
+                            self.time = result.get("time")
                             _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
                             return True
                         _LOGGER.error("登录响应格式错误，缺少token: %s", result)
