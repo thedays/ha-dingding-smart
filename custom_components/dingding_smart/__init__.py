@@ -280,8 +280,11 @@ class DingDingAPI:
     async def get_device_list(self) -> list:
         """获取设备列表"""
         if not self.token:
+            _LOGGER.info("token为空，开始登录")
             if not await self.login():
+                _LOGGER.error("登录失败，无法获取设备列表")
                 return []
+        _LOGGER.info("使用token: %s", self.token[:10] + "..." if self.token else "无")
 
         session = await self._get_session()
         url = f"{self.api_host}v1/api/user/device"
@@ -293,9 +296,12 @@ class DingDingAPI:
             "Connection": "close",
             "formal": "formal",
         }
+        _LOGGER.info("请求头: %s", {k: v for k, v in headers.items() if k != "Authorization" or v == "Bearer "})
+        _LOGGER.info("Authorization头长度: %s", len(headers.get("Authorization", "")))
 
         try:
             async with session.get(url, headers=headers) as resp:
+                _LOGGER.info("获取设备列表响应状态码: %s", resp.status)
                 if resp.status == 200:
                     return await resp.json()
                 elif resp.status == 401:
@@ -303,8 +309,10 @@ class DingDingAPI:
                     _LOGGER.warning("Token已过期，尝试重新登录")
                     if await self.login():
                         # 重新登录成功，重试获取设备列表
+                        _LOGGER.info("重新登录成功，新token: %s", self.token[:10] + "..." if self.token else "无")
                         headers["Authorization"] = f"Bearer {self.token}"
                         async with session.get(url, headers=headers) as resp2:
+                            _LOGGER.info("重试获取设备列表响应状态码: %s", resp2.status)
                             if resp2.status == 200:
                                 return await resp2.json()
                             _LOGGER.error("重试获取设备列表失败: %s", await resp2.text())
