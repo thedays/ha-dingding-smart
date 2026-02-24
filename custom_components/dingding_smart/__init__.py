@@ -235,6 +235,12 @@ class DingDingAPI:
 
     async def login(self) -> bool:
         """登录"""
+        _LOGGER.info("=" * 60)
+        _LOGGER.info("开始登录流程")
+        _LOGGER.info("=" * 60)
+        _LOGGER.info("用户名: %s", self.username)
+        _LOGGER.info("API主机: %s", self.api_host)
+        
         session = await self._get_session()
         url = f"{self.api_host}v1/api/user/login"
 
@@ -248,6 +254,7 @@ class DingDingAPI:
         data = {"username": self.username, "password": self.password}
 
         try:
+            _LOGGER.info("发送登录请求到: %s", url)
             async with session.post(url, headers=headers, json=data) as resp:
                 _LOGGER.info("登录响应状态码: %s", resp.status)
                 _LOGGER.info("登录响应头: %s", dict(resp.headers))
@@ -263,7 +270,16 @@ class DingDingAPI:
                             self.reflash_key = result.get("reflash_key")
                             self.logout_status = result.get("logout_status")
                             self.time = result.get("time")
-                            _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
+                            _LOGGER.info("=" * 60)
+                            _LOGGER.info("登录成功")
+                            _LOGGER.info("=" * 60)
+                            _LOGGER.info("用户ID: %s", self.user_id)
+                            _LOGGER.info("Token: %s", self.token[:10] + "..." if self.token else "无")
+                            _LOGGER.info("Token长度: %s", len(self.token) if self.token else 0)
+                            _LOGGER.info("Reflash Key: %s", self.reflash_key)
+                            _LOGGER.info("Logout Status: %s", self.logout_status)
+                            _LOGGER.info("Time: %s", self.time)
+                            _LOGGER.info("=" * 60)
                             return True
                         _LOGGER.error("登录响应格式错误，缺少token: %s", result)
                         return False
