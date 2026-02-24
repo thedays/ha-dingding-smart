@@ -215,17 +215,26 @@ class DingDingAPI:
 
         try:
             async with session.post(url, headers=headers, json=data) as resp:
-                if resp.status == 200:
-                    result = await resp.json()
-                    if isinstance(result, dict) and "token" in result:
-                        # 只支持直接包含token的格式
-                        self.token = result.get("token")
-                        self.user_id = result.get("id")  # 使用id字段作为user_id
-                        _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
-                        return True
-                    _LOGGER.error("登录响应格式错误，缺少token: %s", result)
-                    return False
-                _LOGGER.error("登录失败: %s", await resp.text())
+                _LOGGER.info("登录响应状态码: %s", resp.status)
+                _LOGGER.info("登录响应头: %s", dict(resp.headers))
+                response_text = await resp.text()
+                _LOGGER.info("登录响应内容: %s", response_text)
+                
+                if 200 <= resp.status < 300:
+                    try:
+                        result = await resp.json()
+                        if isinstance(result, dict) and "token" in result:
+                            # 只支持直接包含token的格式
+                            self.token = result.get("token")
+                            self.user_id = result.get("id")  # 使用id字段作为user_id
+                            _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
+                            return True
+                        _LOGGER.error("登录响应格式错误，缺少token: %s", result)
+                        return False
+                    except Exception as e:
+                        _LOGGER.error("解析登录响应失败: %s", e)
+                        return False
+                _LOGGER.error("登录失败: %s", response_text)
                 return False
         except Exception as err:
             _LOGGER.error("登录异常: %s", err)
