@@ -74,7 +74,44 @@ git tag v1.0.0
 git push origin v1.0.0
 ```
 
-### 2.2 创建Release
+### 2.2 生成zip文件
+
+**生成只包含文件的zip文件**（推荐）：
+
+```bash
+# 删除旧的zip文件（如果存在）
+rm -f dingding_smart.zip
+
+# 进入组件目录
+cd custom_components/dingding_smart
+
+# 删除缓存目录
+rm -rf __pycache__
+
+# 直接压缩文件到根目录
+zip -r ../../dingding_smart.zip sensor.py __init__.py manifest.json strings.json config_flow.py
+
+# 返回上级目录
+cd ../..
+
+# 查看生成的文件
+ls -la dingding_smart.zip
+
+# 验证zip文件内容
+unzip -l dingding_smart.zip
+```
+
+**压缩结果**：
+```
+dingding_smart.zip
+├── sensor.py
+├── __init__.py
+├── manifest.json
+├── strings.json
+└── config_flow.py
+```
+
+### 2.3 创建Release
 
 1. 在GitHub仓库页面，点击 "Releases"
 2. 点击 "Create a new release"
