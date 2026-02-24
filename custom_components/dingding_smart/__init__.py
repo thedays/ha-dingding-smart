@@ -332,6 +332,63 @@ class DingDingAPI:
             await self._session.close()
             self._session = None
 
+    async def bind_push_token(self, push_token: str) -> bool:
+        """绑定推送Token到服务器"""
+        if not self.token:
+            _LOGGER.error("Token为空，无法绑定推送Token")
+            return False
+
+        session = await self._get_session()
+        
+        # 绑定来电推送token
+        bind_call_url = f"{self.api_host}v1/api/user/token"
+        bind_call_data = {
+            "push_token": push_token,
+            "push_platform": "android",
+            "language": "zh-CN",
+            "os_token": "",
+            "os": "Android",
+            "os_push_version": 1,
+            "bundleid": "com.lancens.wxdoorbell",
+            "phone_model": "Xiaomi"
+        }
+
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.token}",
+            "Connection": "close",
+            "formal": "formal",
+        }
+
+        try:
+            # 绑定来电推送token
+            _LOGGER.info("绑定来电推送token...")
+            async with session.post(bind_call_url, headers=headers, json=bind_call_data) as resp:
+                if resp.status == 200:
+                    result = await resp.json()
+                    _LOGGER.info("绑定来电推送token响应: %s", result)
+                else:
+                    _LOGGER.error("绑定来电推送token失败: %s", await resp.text())
+                    return False
+
+            # 绑定消息推送token
+            bind_notify_url = f"{self.api_host}v1/api/user/message/token"
+            _LOGGER.info("绑定消息推送token...")
+            async with session.post(bind_notify_url, headers=headers, json=bind_call_data) as resp:
+                if resp.status == 200:
+                    result = await resp.json()
+                    _LOGGER.info("绑定消息推送token响应: %s", result)
+                else:
+                    _LOGGER.error("绑定消息推送token失败: %s", await resp.text())
+                    return False
+
+            _LOGGER.info("推送Token绑定成功")
+            return True
+        except Exception as err:
+            _LOGGER.error("绑定推送Token异常: %s", err)
+            return False
+
 
 class PushListener:
     """推送监听器（基于逆向的Python实现）"""
@@ -582,6 +639,28 @@ class PushListener:
             _LOGGER.error("JSON解析失败")
         except UnicodeDecodeError:
             _LOGGER.error("数据解码失败")
+
+    async def _bind_push_token(self):
+        """绑定推送token到服务器"""
+        if not self.push_token:
+            _LOGGER.error("推送token为空，无法绑定")
+            return
+
+        if not self.api.token:
+            _LOGGER.error("API token为空，无法绑定推送token")
+            return
+
+        if self._bind_completed:
+            _LOGGER.debug("推送token已绑定，跳过重复绑定")
+            return
+
+        _LOGGER.info("开始绑定推送token到服务器")
+        success = await self.api.bind_push_token(self.push_token)
+        if success:
+            _LOGGER.info("推送token绑定成功")
+            self._bind_completed = True
+        else:
+            _LOGGER.error("推送token绑定失败")
 
     def _handle_push_info(self, push_info: dict):
         """处理推送信息（在Home Assistant事件循环中）"""
