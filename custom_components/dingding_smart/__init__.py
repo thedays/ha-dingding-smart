@@ -361,20 +361,21 @@ class DingDingAPI:
         bind_call_data = {
             "push_token": push_token,
             "push_platform": "android",
-            "language": "zh-CN",
+            "language": "zh",
             "os_token": "",
             "os": "Android",
             "os_push_version": 1,
             "bundleid": "com.lancens.wxdoorbell",
-            "phone_model": "Xiaomi"
+            "phone_model": "phone:Xiaomi_Mi_10/App:钉钉智能_1.0.0/Android_11"
         }
 
         headers = {
+            "baseUrl": "formal",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.token}",
             "Connection": "close",
-            "formal": "formal",
+            "bundleid": "com.lancens.wxdoorbell",
+            "Token": self.token
         }
 
         try:
@@ -384,6 +385,9 @@ class DingDingAPI:
                 if resp.status == 200:
                     result = await resp.json()
                     _LOGGER.info("绑定来电推送token响应: %s", result)
+                    if result.get("message") != "success":
+                        _LOGGER.error("绑定来电推送token失败: %s", result)
+                        return False
                 else:
                     _LOGGER.error("绑定来电推送token失败: %s", await resp.text())
                     return False
@@ -395,6 +399,9 @@ class DingDingAPI:
                 if resp.status == 200:
                     result = await resp.json()
                     _LOGGER.info("绑定消息推送token响应: %s", result)
+                    if result.get("message") != "success":
+                        _LOGGER.error("绑定消息推送token失败: %s", result)
+                        return False
                 else:
                     _LOGGER.error("绑定消息推送token失败: %s", await resp.text())
                     return False
