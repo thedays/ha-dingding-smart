@@ -217,9 +217,24 @@ class DingDingAPI:
             async with session.post(url, headers=headers, json=data) as resp:
                 if resp.status == 200:
                     result = await resp.json()
-                    if result.get("message") == "success":
+                    # 支持多种响应格式
+                    if result.get("code") == 0:
+                        # 格式1: {"code": 0, "data": {"token": "..."}}
+                        data = result.get("data", {})
+                        self.token = data.get("token")
+                        self.user_id = data.get("id")
+                        _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
+                        return True
+                    elif result.get("message") == "success":
+                        # 格式2: {"message": "success", "token": "..."}
                         self.token = result.get("token")
                         self.user_id = result.get("user_id")
+                        _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
+                        return True
+                    elif "token" in result:
+                        # 格式3: 直接包含token
+                        self.token = result.get("token")
+                        self.user_id = result.get("user_id") or result.get("id")
                         _LOGGER.info("登录成功, 用户ID: %s", self.user_id)
                         return True
                 _LOGGER.error("登录失败: %s", await resp.text())
@@ -240,9 +255,9 @@ class DingDingAPI:
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.token}",
             "Connection": "close",
             "formal": "formal",
-            "Token": self.token,
         }
 
         try:
@@ -259,6 +274,7 @@ class DingDingAPI:
         """关闭会话"""
         if self._session and not self._session.closed:
             await self._session.close()
+            self._session = None
 
 
 class PushListener:
@@ -655,12 +671,12 @@ class PushListener:
         url = f"{self.api.api_host}v1/api/user/token"
         
         headers = {
-            "baseUrl": "formal",
             "Accept": "application/json",
             "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.http_token}",
+            "baseUrl": "formal",
             "Connection": "close",
             "bundleid": "com.lancens.wxdoorbell",
-            "Token": self.http_token,
         }
 
         data = {
@@ -696,12 +712,12 @@ class PushListener:
         url = f"{self.api.api_host}v1/api/user/message/token"
         
         headers = {
-            "baseUrl": "formal",
             "Accept": "application/json",
             "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.http_token}",
+            "baseUrl": "formal",
             "Connection": "close",
             "bundleid": "com.lancens.wxdoorbell",
-            "Token": self.http_token,
         }
 
         data = {
@@ -786,7 +802,9 @@ class DingDingCoordinator(DataUpdateCoordinator):
         """更新数据"""
         # 登录
         if not self.api.token:
-            await self.api.login()
+            if not await self.api.login():
+                _LOGGER.error("登录失败，无法获取设备列表")
+                return {"devices": [], "last_unlock": self.last_unlock_event}
 
         # 获取设备列表
         self.devices = await self.api.get_device_list()
