@@ -71,6 +71,7 @@ dingding_smart:
   server_region: cn  # cn, eu, us
   device_uid: "your_device_uid"  # 可选：只监听指定设备
   user_id: 12742576  # 可选：用户ID
+  imei: "your_imei"  # 可选：设备IMEI号，用于推送绑定
 ```
 
 ## 测试
@@ -87,6 +88,9 @@ python3 test_login.py --username 13800138000 --password your_password
 cp config.example.json config.json
 # 编辑config.json填入你的信息
 python3 test_login.py --config config.json
+
+# 方法3：独立测试脚本
+python3 local/test_login_standalone.py --username 13800138000 --password your_password
 ```
 
 ### 2. 测试推送连接
@@ -100,6 +104,12 @@ python3 test_push.py --host chnpush.lancens.com --port 11001
 
 # 方法3：使用配置文件
 python3 test_push.py --config config.json
+
+# 方法4：完整推送测试
+python3 local/test_push_complete.py --config config.json
+
+# 方法5：HA推送测试
+python3 local/test_ha_push.py
 ```
 
 ### 3. 测试结果说明
