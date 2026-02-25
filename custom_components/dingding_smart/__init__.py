@@ -318,8 +318,11 @@ class DingDingAPI:
         try:
             async with session.get(url, headers=headers) as resp:
                 _LOGGER.info("获取设备列表响应状态码: %s", resp.status)
+                _LOGGER.info("响应头: %s", dict(resp.headers))
+                
                 if resp.status == 200:
                     result = await resp.json()
+                    _LOGGER.info("响应内容: %s", result)
                     # 检查响应内容是否包含错误
                     if isinstance(result, dict) and result.get("message") == "no token":
                         _LOGGER.warning("Token无效，尝试重新登录")
@@ -334,6 +337,7 @@ class DingDingAPI:
                                 return []
                         _LOGGER.error("重新登录失败，无法获取设备列表")
                         return []
+                    _LOGGER.info("返回设备列表")
                     return await resp.json()
                 elif resp.status == 401:
                     # Token过期或无效，重新登录
@@ -351,7 +355,8 @@ class DingDingAPI:
                     _LOGGER.error("重新登录失败，无法获取设备列表")
                     return []
                 else:
-                    _LOGGER.error("获取设备列表失败: %s", await resp.text())
+                    response_text = await resp.text()
+                    _LOGGER.error("获取设备列表失败，状态码: %s, 响应: %s", resp.status, response_text)
                     return []
         except Exception as err:
             _LOGGER.error("获取设备列表异常: %s", err)
