@@ -2,13 +2,11 @@
 import logging
 from typing import Any
 
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
     SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
-    DEVICE_CLASS_BATTERY,
-    DEVICE_CLASS_SIGNAL_STRENGTH,
 )
 from homeassistant.core import HomeAssistant, Event
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -174,7 +172,7 @@ class DeviceBatterySensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{name} 电池电量"
         self._attr_icon = "mdi:battery"
         self._attr_native_unit_of_measurement = PERCENTAGE
-        self._attr_device_class = DEVICE_CLASS_BATTERY
+        self._attr_device_class = SensorDeviceClass.BATTERY
 
     @property
     def native_value(self):
@@ -208,7 +206,7 @@ class DeviceWifiSignalSensor(CoordinatorEntity, SensorEntity):
         self._attr_name = f"{name} WiFi信号"
         self._attr_icon = "mdi:wifi"
         self._attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
-        self._attr_device_class = DEVICE_CLASS_SIGNAL_STRENGTH
+        self._attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
 
     @property
     def native_value(self):

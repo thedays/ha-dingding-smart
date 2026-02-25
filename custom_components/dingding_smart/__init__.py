@@ -183,7 +183,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
             }
             # 合并现有配置
             updated_config = {**config, **new_config}
-            await entry.async_update_data(updated_config)
+            # 使用正确的方法更新配置
+            hass.config_entries.async_update_entry(entry, data=updated_config)
             _LOGGER.info("token已持久化保存")
     except Exception as err:
         _LOGGER.error("登录失败: %s", err)
@@ -306,29 +307,66 @@ class DingDingAPI:
         url = f"{self.api_host}v1/api/user/device"
 
         headers = {
+            "baseUrl": "formal",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.token}",
             "Connection": "close",
-            "formal": "formal",
+            "bundleid": "com.lancens.wxdoorbell",
+            "Token": self.token
         }
-        _LOGGER.info("请求头: %s", {k: v for k, v in headers.items() if k != "Authorization" or v == "Bearer "})
-        _LOGGER.info("Authorization头长度: %s", len(headers.get("Authorization", "")))
+        _LOGGER.info("请求头: %s", {k: v for k, v in headers.items() if k != "Token"})
+        _LOGGER.info("Token头长度: %s", len(headers.get("Token", "")))
+        _LOGGER.info("Token值: %s", self.token[:10] + "..." if self.token else "无")
 
         try:
             async with session.get(url, headers=headers) as resp:
                 _LOGGER.info("获取设备列表响应状态码: %s", resp.status)
                 _LOGGER.info("响应头: %s", dict(resp.headers))
                 
-                if resp.status == 200:
-                    result = await resp.json()
-                    _LOGGER.info("响应内容: %s", result)
-                    # 检查响应内容是否包含错误
-                    if isinstance(result, dict) and result.get("message") == "no token":
+                if 200 <= resp.status < 300:
+                    # 先读取响应内容
+                    response_text = await resp.text()
+                    _LOGGER.info("响应内容: %s", response_text[:100] + "..." if len(response_text) > 100 else response_text)
+                    
+                    # 检查内容类型
+                    content_type = resp.headers.get("Content-Type", "")
+                    _LOGGER.info("内容类型: %s", content_type)
+                    
+                    # 尝试解析为JSON
+                    try:
+                        result = json.loads(response_text)
+                        _LOGGER.info("成功解析为JSON")
+                        # 检查响应内容是否包含错误
+                        if isinstance(result, dict) and result.get("message") == "no token":
+                            _LOGGER.warning("Token无效，尝试重新登录")
+                            if await self.login():
+                                _LOGGER.info("重新登录成功，新token: %s", self.token[:10] + "..." if self.token else "无")
+                                headers["Token"] = self.token
+                                async with session.get(url, headers=headers) as resp2:
+                                    _LOGGER.info("重试获取设备列表响应状态码: %s", resp2.status)
+                                    if resp2.status == 200:
+                                        return await resp2.json()
+                                    _LOGGER.error("重试获取设备列表失败: %s", await resp2.text())
+                                    return []
+                            _LOGGER.error("重新登录失败，无法获取设备列表")
+                            return []
+                        _LOGGER.info("返回设备列表")
+                        return result
+                    except json.JSONDecodeError:
+                        _LOGGER.error("响应不是有效的JSON，内容类型: %s", content_type)
+                        _LOGGER.error("响应内容: %s", response_text[:200] + "..." if len(response_text) > 200 else response_text)
+                        return []
+                elif resp.status in [401, 400]:
+                    # 401: Unauthorized, 400: Bad Request (可能包含no token错误)
+                    response_text = await resp.text()
+                    _LOGGER.info("响应内容: %s", response_text)
+                    
+                    # 检查响应内容是否包含no token错误
+                    if "no token" in response_text:
                         _LOGGER.warning("Token无效，尝试重新登录")
                         if await self.login():
                             _LOGGER.info("重新登录成功，新token: %s", self.token[:10] + "..." if self.token else "无")
-                            headers["Authorization"] = f"Bearer {self.token}"
+                            headers["Token"] = self.token
                             async with session.get(url, headers=headers) as resp2:
                                 _LOGGER.info("重试获取设备列表响应状态码: %s", resp2.status)
                                 if resp2.status == 200:
@@ -337,23 +375,24 @@ class DingDingAPI:
                                 return []
                         _LOGGER.error("重新登录失败，无法获取设备列表")
                         return []
-                    _LOGGER.info("返回设备列表")
-                    return await resp.json()
-                elif resp.status == 401:
-                    # Token过期或无效，重新登录
-                    _LOGGER.warning("Token已过期，尝试重新登录")
-                    if await self.login():
-                        # 重新登录成功，重试获取设备列表
-                        _LOGGER.info("重新登录成功，新token: %s", self.token[:10] + "..." if self.token else "无")
-                        headers["Authorization"] = f"Bearer {self.token}"
-                        async with session.get(url, headers=headers) as resp2:
-                            _LOGGER.info("重试获取设备列表响应状态码: %s", resp2.status)
-                            if resp2.status == 200:
-                                return await resp2.json()
-                            _LOGGER.error("重试获取设备列表失败: %s", await resp2.text())
-                            return []
-                    _LOGGER.error("重新登录失败，无法获取设备列表")
-                    return []
+                    elif resp.status == 401:
+                        # Token过期或无效，重新登录
+                        _LOGGER.warning("Token已过期，尝试重新登录")
+                        if await self.login():
+                            # 重新登录成功，重试获取设备列表
+                            _LOGGER.info("重新登录成功，新token: %s", self.token[:10] + "..." if self.token else "无")
+                            headers["Token"] = self.token
+                            async with session.get(url, headers=headers) as resp2:
+                                _LOGGER.info("重试获取设备列表响应状态码: %s", resp2.status)
+                                if resp2.status == 200:
+                                    return await resp2.json()
+                                _LOGGER.error("重试获取设备列表失败: %s", await resp2.text())
+                                return []
+                        _LOGGER.error("重新登录失败，无法获取设备列表")
+                        return []
+                    else:
+                        _LOGGER.error("获取设备列表失败，状态码: %s, 响应: %s", resp.status, response_text)
+                        return []
                 else:
                     response_text = await resp.text()
                     _LOGGER.error("获取设备列表失败，状态码: %s, 响应: %s", resp.status, response_text)
@@ -402,7 +441,7 @@ class DingDingAPI:
             # 绑定来电推送token
             _LOGGER.info("绑定来电推送token...")
             async with session.post(bind_call_url, headers=headers, json=bind_call_data) as resp:
-                if resp.status == 200:
+                if 200 <= resp.status < 300:
                     result = await resp.json()
                     _LOGGER.info("绑定来电推送token响应: %s", result)
                     if result.get("message") != "success":
@@ -416,7 +455,7 @@ class DingDingAPI:
             bind_notify_url = f"{self.api_host}v1/api/user/message/token"
             _LOGGER.info("绑定消息推送token...")
             async with session.post(bind_notify_url, headers=headers, json=bind_call_data) as resp:
-                if resp.status == 200:
+                if 200 <= resp.status < 300:
                     result = await resp.json()
                     _LOGGER.info("绑定消息推送token响应: %s", result)
                     if result.get("message") != "success":
@@ -478,9 +517,37 @@ class PushListener:
 
     def _create_ssl_context(self):
         """创建自定义SSL安全上下文"""
-        context = ssl.create_default_context(ssl.Purpose.SERVER_AUTH)
+        # 使用更基础的方式创建SSL上下文
+        context = ssl.SSLContext()
+        
+        # 禁用证书验证（临时解决方案）
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
+        
+        # 启用所有TLS版本
+        try:
+            # 尝试使用TLSVersion常量
+            context.min_version = ssl.TLSVersion.TLSv1
+            context.max_version = ssl.TLSVersion.TLSv1_3
+        except AttributeError:
+            # 兼容旧版本Python
+            context.min_version = ssl.TLSVersion.TLSv1 if hasattr(ssl, 'TLSVersion') else ssl.PROTOCOL_TLSv1
+            context.max_version = ssl.TLSVersion.TLSv1_3 if hasattr(ssl, 'TLSVersion') else ssl.PROTOCOL_TLSv1_2
+        
+        # 禁用SSLv3
+        context.options |= ssl.OP_NO_SSLv3
+        
+        # 禁用证书验证（再次确认）
+        context.verify_mode = ssl.CERT_NONE
+        context.check_hostname = False
+        
+        # 使用更宽松的密码套件
+        try:
+            context.set_ciphers('DEFAULT@SECLEVEL=1')
+        except ssl.SSLError:
+            # 如果设置失败，使用默认密码套件
+            _LOGGER.warning("无法设置自定义密码套件，使用默认值")
+        
         return context
 
     def _get_register_info(self) -> str:
@@ -609,7 +676,13 @@ class PushListener:
         """发送注册信息"""
         try:
             register_data = self._register_info.encode("utf-8")
-            return self._send_message(self.CMD_REGISTER, register_data)
+            _LOGGER.info("发送注册信息: %s", self._register_info)
+            result = self._send_message(self.CMD_REGISTER, register_data)
+            if result:
+                _LOGGER.info("注册信息发送成功")
+            else:
+                _LOGGER.error("注册信息发送失败")
+            return result
         except Exception as e:
             _LOGGER.error("发送注册信息失败: %s", e)
             return False
@@ -650,8 +723,12 @@ class PushListener:
     def _handle_message(self, cmd: int, data: bytes):
         """处理接收到的消息"""
         try:
+            _LOGGER.debug("收到消息: cmd=%d, data_length=%d", cmd, len(data))
+            
             if cmd == self.CMD_TOKEN:
+                _LOGGER.info("收到CMD_TOKEN命令")
                 token_data = json.loads(data.decode("utf-8"))
+                _LOGGER.debug("Token数据: %s", token_data)
                 token = token_data.get(self.FLAG_PUSH_CLIENT_TOKEN, "")
                 self.push_token = token
                 _LOGGER.info("收到token: %s", token)
@@ -663,6 +740,7 @@ class PushListener:
                 )
 
             elif cmd == self.CMD_PUSH:
+                _LOGGER.info("收到CMD_PUSH命令")
                 push_data = data.decode("utf-8")
                 push_info = json.loads(push_data)
                 _LOGGER.info("收到推送: %s", push_info)
@@ -673,6 +751,7 @@ class PushListener:
                 )
 
             elif cmd == self.CMD_HEARTBEAT:
+                _LOGGER.debug("收到CMD_HEARTBEAT命令")
                 _LOGGER.debug("收到心跳响应")
 
             else:
@@ -830,10 +909,16 @@ class PushListener:
             _LOGGER.info("登录成功，获取到http_token")
 
             # 步骤2: 绑定来电推送token
-            await self._bind_call_push_token()
+            call_success = await self._bind_call_push_token()
+            if not call_success:
+                _LOGGER.error("绑定来电推送token失败，停止绑定流程")
+                return
 
             # 步骤3: 绑定消息推送token
-            await self._bind_notify_push_token()
+            notify_success = await self._bind_notify_push_token()
+            if not notify_success:
+                _LOGGER.error("绑定消息推送token失败，停止绑定流程")
+                return
 
             self._bind_completed = True
             _LOGGER.info("推送Token绑定完成")
@@ -849,12 +934,12 @@ class PushListener:
         url = f"{self.api.api_host}v1/api/user/token"
         
         headers = {
+            "baseUrl": "formal",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.http_token}",
-            "baseUrl": "formal",
             "Connection": "close",
             "bundleid": "com.lancens.wxdoorbell",
+            "Token": self.http_token
         }
 
         data = {
@@ -871,16 +956,20 @@ class PushListener:
         try:
             session = await self.api._get_session()
             async with session.post(url, json=data, headers=headers) as resp:
-                if resp.status == 200:
+                if 200 <= resp.status < 300:
                     result = await resp.json()
                     if result.get("message") == "success":
                         _LOGGER.info("绑定来电推送token成功")
+                        return True
                     else:
                         _LOGGER.error("绑定来电推送token失败: %s", result)
+                        return False
                 else:
                     _LOGGER.error("绑定来电推送token失败: HTTP %s", resp.status)
+                    return False
         except Exception as e:
             _LOGGER.error("绑定来电推送token异常: %s", e)
+            return False
 
     async def _bind_notify_push_token(self):
         """绑定消息推送token"""
@@ -890,12 +979,12 @@ class PushListener:
         url = f"{self.api.api_host}v1/api/user/message/token"
         
         headers = {
+            "baseUrl": "formal",
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.http_token}",
-            "baseUrl": "formal",
             "Connection": "close",
             "bundleid": "com.lancens.wxdoorbell",
+            "Token": self.http_token
         }
 
         data = {
@@ -912,16 +1001,20 @@ class PushListener:
         try:
             session = await self.api._get_session()
             async with session.post(url, json=data, headers=headers) as resp:
-                if resp.status == 200:
+                if 200 <= resp.status < 300:
                     result = await resp.json()
                     if result.get("message") == "success":
                         _LOGGER.info("绑定消息推送token成功")
+                        return True
                     else:
                         _LOGGER.error("绑定消息推送token失败: %s", result)
+                        return False
                 else:
                     _LOGGER.error("绑定消息推送token失败: HTTP %s", resp.status)
+                    return False
         except Exception as e:
             _LOGGER.error("绑定消息推送token异常: %s", e)
+            return False
 
     def _send_message(self, cmd: int, data: bytes) -> bool:
         """发送消息到服务器"""
@@ -995,4 +1088,7 @@ class DingDingCoordinator(DataUpdateCoordinator):
     def update_unlock_event(self, event_data: dict):
         """更新最新开门事件"""
         self.last_unlock_event = event_data
-        self.async_update_listeners()
+        # 在Home Assistant事件循环中更新监听器
+        self.hass.loop.call_soon_threadsafe(
+            lambda: self.async_update_listeners()
+        )
