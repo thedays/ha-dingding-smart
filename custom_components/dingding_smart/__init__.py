@@ -822,13 +822,8 @@ class PushListener:
                 },
             )
         elif event_type == PUSH_TYPE_LOCK:
-            # 区分门内开锁和门外开锁
-            unlock_method = "lock"
-            alert_text = alert or message
-            if "门内" in alert_text:
-                unlock_method = "inside_lock"
-            elif "门外" in alert_text:
-                unlock_method = "outside_lock"
+            # 门内开锁事件
+            unlock_method = "inside_lock"
                 
             self._fire_event(
                 EVENT_DOOR_UNLOCK,

@@ -69,8 +69,6 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
             method_display = method
             if method == "inside_lock":
                 method_display = "门内开锁"
-            elif method == "outside_lock":
-                method_display = "门外开锁"
             elif method == "fingerprint":
                 method_display = "指纹开锁"
             elif method == "password":
