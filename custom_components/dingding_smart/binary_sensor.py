@@ -50,16 +50,12 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
         self._attr_icon = "mdi:door-closed"
         self._is_unlocked = False
         self._last_unlock_time = None
+        self._cancel_timer = None
 
     @property
     def is_on(self):
         """返回门锁状态（True表示开锁）"""
-        # 如果最近30秒内有开锁事件，返回True
-        if self._last_unlock_time:
-            time_diff = datetime.now() - self._last_unlock_time
-            if time_diff < timedelta(seconds=30):
-                return True
-        return False
+        return self._is_unlocked
 
     @callback
     def _handle_door_unlock_event(self, event: Event):
@@ -73,6 +69,24 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
                 event.data.get("method")
             )
             self.async_write_ha_state()
+            
+            # 取消之前的定时器
+            if self._cancel_timer:
+                self._cancel_timer()
+            
+            # 5秒后自动恢复为关锁状态
+            self._cancel_timer = self.hass.loop.call_later(
+                5, 
+                self._auto_lock
+            )
+
+    @callback
+    def _auto_lock(self):
+        """自动恢复为关锁状态"""
+        self._is_unlocked = False
+        _LOGGER.info("门锁状态更新: %s - 自动恢复为关锁", self._name)
+        self.async_write_ha_state()
+        self._cancel_timer = None
 
     async def async_added_to_hass(self):
         """当实体添加到Home Assistant时"""
@@ -81,6 +95,13 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
         self.async_on_remove(
             self.hass.bus.async_listen(EVENT_DOOR_UNLOCK, self._handle_door_unlock_event)
         )
+
+    async def async_will_remove_from_hass(self):
+        """当实体从Home Assistant移除时"""
+        # 取消定时器
+        if self._cancel_timer:
+            self._cancel_timer()
+        await super().async_will_remove_from_hass()
 
     @property
     def extra_state_attributes(self):
