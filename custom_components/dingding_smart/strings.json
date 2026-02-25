@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "配置钉钉智能门铃",
-        "description": "请输入您的钉钉智能账号信息",
+        "title": "配置叮叮智能门铃",
+        "description": "请输入您的叮叮智能账号信息",
         "data": {
           "username": "用户名/邮箱",
           "password": "密码",
@@ -16,6 +16,6 @@
       "no_devices": "未找到设备，请确保设备已添加到账号",
       "unknown_error": "未知错误，请检查网络连接"
     },
-    "title": "钉钉智能门铃"
+    "title": "叮叮智能门铃"
   }
 }

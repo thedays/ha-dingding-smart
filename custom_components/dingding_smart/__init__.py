@@ -1,5 +1,5 @@
 """
-钉钉智能门铃 - Home Assistant集成
+叮叮智能门铃 - Home Assistant集成
 支持开门事件监控、远程开锁等功能
 基于逆向的Python推送实现
 """

@@ -1,6 +1,6 @@
 # 发布到GitHub和HACS指南
 
-本指南将帮助你将钉钉智能门铃集成发布到GitHub并通过HACS安装。
+本指南将帮助你将叮叮智能门铃集成发布到GitHub并通过HACS安装。
 
 ## 📋 前置要求
 
@@ -15,7 +15,7 @@
 1. 访问 https://github.com/new
 2. 填写仓库信息：
    - **仓库名称**: `ha-dingding-smart` (推荐)
-   - **描述**: 钉钉智能门铃 - Home Assistant集成
+   - **描述**: 叮叮智能门铃 - Home Assistant集成
    - **可见性**: Public (公开，HACS需要)
    - **初始化仓库**: ✅ 添加README文件
 3. 点击 "Create repository"

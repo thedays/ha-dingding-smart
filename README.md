@@ -1,6 +1,6 @@
-# 钉钉智能门铃 - Home Assistant 集成
+# 叮叮智能门铃 - Home Assistant 集成
 
-基于逆向的Python推送实现的Home Assistant自定义集成，支持钉钉智能门铃/摄像头的开门事件监控、远程开锁等功能。
+基于逆向的Python推送实现的Home Assistant自定义集成，支持叮叮智能门铃/摄像头的开门事件监控、远程开锁等功能。
 
 ## 功能特性
 
@@ -25,7 +25,7 @@
 1. 打开Home Assistant
 2. 进入 "HACS" → "集成"
 3. 点击 "浏览并下载集成"
-4. 搜索 "dingding" 或 "钉钉智能"
+4. 搜索 "dingding" 或 "叮叮智能"
 5. 点击安装
 6. 重启Home Assistant
 
@@ -59,10 +59,10 @@ docker restart homeassistant
 1. 打开Home Assistant
 2. 进入 "设置" → "设备与服务"
 3. 点击 "添加集成"
-4. 搜索 "dingding" 或 "钉钉智能"
+4. 搜索 "dingding" 或 "叮叮智能"
 5. 填写配置信息：
-   - 用户名：钉钉智能App的登录账号（手机号）
-   - 密码：钉钉智能App的登录密码
+   - 用户名：叮叮智能App的登录账号（手机号）
+   - 密码：叮叮智能App的登录密码
    - 服务器区域：选择服务器所在区域（中国/欧洲/美国）
 6. 点击 "提交"
 
@@ -72,8 +72,8 @@ docker restart homeassistant
 
 | 字段 | 说明 | 示例 |
 |------|------|------|
-| 用户名 | 钉钉智能App的登录账号 | `13800138000` |
-| 密码 | 钉钉智能App的登录密码 | `your_password` |
+| 用户名 | 叮叮智能App的登录账号 | `13800138000` |
+| 密码 | 叮叮智能App的登录密码 | `your_password` |
 | 服务器区域 | 选择服务器所在区域 | `中国` / `欧洲` / `美国` |
 
 ### 可选配置
@@ -437,11 +437,11 @@ homeassistant/
 
 ### 发布内容示例
 
-**标题**: 🚪 把钉钉智能门铃接入Home Assistant，实现智能门铃监控！
+**标题**: 🚪 把叮叮智能门铃接入Home Assistant，实现智能门铃监控！
 
 **正文**:
 
-终于把钉钉智能门铃成功接入Home Assistant了！🎉
+终于把叮叮智能门铃成功接入Home Assistant了！🎉
 
 ✨ 主要功能：
 ✅ 实时推送监听 - 基于SSL/TLS协议
@@ -460,8 +460,8 @@ homeassistant/
 2. 手动安装：下载zip文件，复制到custom_components目录
 
 📝 配置简单：
-- 用户名：钉钉智能App账号
-- 密码：钉钉智能App密码
+- 用户名：叮叮智能App账号
+- 密码：叮叮智能App密码
 - 服务器区域：选择中国/欧洲/美国
 
 🎯 支持的事件：
@@ -480,11 +480,11 @@ homeassistant/
 - 设备离线时报警
 - 门内开锁提醒
 
-#智能家居 #HomeAssistant #钉钉智能 #门铃 #DIY #自动化
+#智能家居 #HomeAssistant #叮叮智能 #门铃 #DIY #自动化
 
 ### 标签建议
 
-#智能家居 #HomeAssistant #钉钉智能 #门铃 #智能门锁 #DIY #自动化 #物联网 #HomeAssistant集成
+#智能家居 #HomeAssistant #叮叮智能 #门铃 #智能门锁 #DIY #自动化 #物联网 #HomeAssistant集成
 
 ### 图片建议
 

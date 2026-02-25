@@ -1,17 +1,17 @@
 #!/bin/bash
 
-# 钉钉智能门铃集成 - 打包脚本
+# 叮叮智能门铃集成 - 打包脚本
 # 用于创建HACS安装包
 
 set -e
 
 # 配置
-VERSION="1.0.0"
+VERSION="1.0.12"
 PACKAGE_NAME="dingding_smart"
-ZIP_NAME="${PACKAGE_NAME}-${VERSION}.zip"
+ZIP_NAME="${PACKAGE_NAME}.zip"
 
 echo "========================================="
-echo "钉钉智能门铃集成 - 打包脚本"
+echo "叮叮智能门铃集成 - 打包脚本"
 echo "========================================="
 echo ""
 

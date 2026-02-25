@@ -1,8 +1,8 @@
-# 钉钉智能门铃 - 仪表盘配置示例
+# 叮叮智能门铃 - 仪表盘配置示例
 
 ## 概述
 
-本文件展示了如何在Home Assistant仪表盘中显示钉钉智能门铃的设备信息。
+本文件展示了如何在Home Assistant仪表盘中显示叮叮智能门铃的设备信息。
 
 ## 可用的传感器
 
@@ -35,7 +35,7 @@
 在 `lovelace.yaml` 或通过UI编辑器添加以下卡片：
 
 ```yaml
-title: 钉钉智能门铃
+title: 叮叮智能门铃
 views:
   - title: 设备概览
     path: default_view

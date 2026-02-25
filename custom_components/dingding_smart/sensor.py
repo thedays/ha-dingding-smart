@@ -1,4 +1,4 @@
-"""钉钉智能门铃 - 传感器实体"""
+"""叮叮智能门铃 - 传感器实体"""
 import logging
 from typing import Any
 

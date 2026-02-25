@@ -1,6 +1,6 @@
 {
   "domain": "dingding_smart",
-  "name": "钉钉智能门铃",
+  "name": "叮叮智能门铃",
   "codeowners": ["@thedays"],
   "config_flow": true,
   "dependencies": [],

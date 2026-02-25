@@ -1,4 +1,4 @@
-"""钉钉智能门铃 - 配置流"""
+"""叮叮智能门铃 - 配置流"""
 import logging
 from typing import Any
 import voluptuous as vol
@@ -23,7 +23,7 @@ STEP_USER_DATA_SCHEMA = vol.Schema(
 
 
 class DingDingConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """钉钉智能配置流"""
+    """叮叮智能配置流"""
 
     VERSION = 1
 
