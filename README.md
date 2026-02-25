@@ -5,7 +5,7 @@
 ## 功能特性
 
 - ✅ 实时推送监听（基于SSL/TLS）
-- ✅ 开门事件监控（指纹、密码、门内/门外开锁）
+- ✅ 开门事件监控（指纹、密码、门内开锁）
 - ✅ 门铃呼叫通知
 - ✅ 设备在线/离线状态
 - ✅ 多种报警事件（PIR移动侦测、低电量、温度报警等）
@@ -112,7 +112,6 @@ dingding_smart:
 - `fingerprint` - 指纹开锁
 - `password` - 密码开锁
 - `inside_lock` - 门内开锁
-- `outside_lock` - 门外开锁
 
 ## 事件
 
@@ -126,7 +125,7 @@ dingding_smart:
 ```json
 {
   "uid": "device_uid",
-  "method": "fingerprint|password|inside_lock|outside_lock",
+  "method": "fingerprint|password|inside_lock",
   "message": "开门消息",
   "alert": "提示信息",
   "name": "设备名称"
@@ -137,7 +136,6 @@ dingding_smart:
 - `fingerprint`: 指纹开锁
 - `password`: 密码开锁
 - `inside_lock`: 门内开锁
-- `outside_lock`: 门外开锁
 
 ### 门铃呼叫事件
 
@@ -238,25 +236,7 @@ automation:
           message: "有人在门内开锁了！"
 ```
 
-### 3. 门外开锁时发送通知
-
-```yaml
-automation:
-  - alias: "门外开锁提醒"
-    trigger:
-      - platform: event
-        event_type: dingding_smart_door_unlock
-    condition:
-      - condition: template
-        value_template: "{{ trigger.event.data.method == 'outside_lock' }}"
-    action:
-      - service: notify.mobile_app_your_phone
-        data:
-          title: "门外开锁"
-          message: "有人在门外开锁了！"
-```
-
-### 4. 门铃呼叫时播放声音
+### 3. 门铃呼叫时播放声音
 
 ```yaml
 automation:
@@ -273,7 +253,7 @@ automation:
           media_content_type: music
 ```
 
-### 5. 设备离线时报警
+### 4. 设备离线时报警
 
 ```yaml
 automation:
@@ -288,7 +268,7 @@ automation:
           message: "门铃设备 {{ trigger.event.data.name }} 已离线！"
 ```
 
-### 6. 指纹开锁时记录日志
+### 5. 指纹开锁时记录日志
 
 ```yaml
 automation:
@@ -426,7 +406,6 @@ homeassistant/
 ## 版本历史
 
 ### v1.0.12 (2026-02-25)
-- ✅ 区分门内开锁和门外开锁事件
 - ✅ 优化门锁状态自动恢复时间为5秒
 - ✅ 添加中文方法显示
 
@@ -466,7 +445,7 @@ homeassistant/
 
 ✨ 主要功能：
 ✅ 实时推送监听 - 基于SSL/TLS协议
-✅ 开门事件监控 - 支持指纹、密码、门内/门外开锁
+✅ 开门事件监控 - 支持指纹、密码、门内开锁
 ✅ 门铃呼叫通知 - 实时接收门铃呼叫
 ✅ 设备状态监控 - 在线/离线、电池电量、WiFi信号
 ✅ 门锁状态传感器 - 自动5秒恢复
@@ -489,7 +468,6 @@ homeassistant/
 - 指纹开锁
 - 密码开锁
 - 门内开锁
-- 门外开锁
 - 门铃呼叫
 - 设备离线/上线
 - PIR移动侦测
@@ -500,7 +478,7 @@ homeassistant/
 - 开门时发送手机通知
 - 门铃呼叫时播放声音
 - 设备离线时报警
-- 区分门内/门外开锁
+- 门内开锁提醒
 
 #智能家居 #HomeAssistant #钉钉智能 #门铃 #DIY #自动化
 
