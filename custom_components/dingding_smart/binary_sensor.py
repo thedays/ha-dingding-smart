@@ -63,10 +63,23 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
         if event.data.get("uid") == self._uid:
             self._is_unlocked = True
             self._last_unlock_time = datetime.now()
+            method = event.data.get("method", "unknown")
+            
+            # 处理不同的开锁方法
+            method_display = method
+            if method == "inside_lock":
+                method_display = "门内开锁"
+            elif method == "outside_lock":
+                method_display = "门外开锁"
+            elif method == "fingerprint":
+                method_display = "指纹开锁"
+            elif method == "password":
+                method_display = "密码开锁"
+            
             _LOGGER.info(
                 "门锁状态更新: %s - 开锁 (方法: %s)",
                 self._name,
-                event.data.get("method")
+                method_display
             )
             self.async_write_ha_state()
             
