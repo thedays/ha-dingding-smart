@@ -59,6 +59,7 @@ local/
 
 # Package files
 *.zip
+!dingding_smart.zip
 !dingding_smart-*.zip
 
 # Test files
