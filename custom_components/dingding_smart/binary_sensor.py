@@ -32,6 +32,7 @@ async def async_setup_entry(
         entities.extend(
             [
                 DoorLockSensor(coordinator, uid, name),
+                OutsideDoorUnlockSensor(coordinator, uid, name),
             ]
         )
 
@@ -39,14 +40,14 @@ async def async_setup_entry(
 
 
 class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
-    """门锁状态传感器"""
+    """门内开锁状态传感器"""
 
     def __init__(self, coordinator: DingDingCoordinator, uid: str, name: str):
         super().__init__(coordinator)
         self._uid = uid
         self._name = name
         self._attr_unique_id = f"{DOMAIN}_{uid}_door_lock"
-        self._attr_name = f"{name} 门锁状态"
+        self._attr_name = f"{name} 门内开锁状态"
         self._attr_icon = "mdi:door-closed"
         self._is_unlocked = False
         self._last_unlock_time = None
@@ -54,50 +55,137 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
 
     @property
     def is_on(self):
-        """返回门锁状态（True表示开锁）"""
+        """返回门内开锁状态（True表示门内开锁）"""
         return self._is_unlocked
 
     @callback
     def _handle_door_unlock_event(self, event: Event):
-        """处理开锁事件"""
+        """处理门内开锁事件"""
         if event.data.get("uid") == self._uid:
-            self._is_unlocked = True
-            self._last_unlock_time = datetime.now()
             method = event.data.get("method", "unknown")
             
-            # 处理不同的开锁方法
-            method_display = method
+            # 只处理门内开锁事件
             if method == "inside_lock":
+                self._is_unlocked = True
+                self._last_unlock_time = datetime.now()
                 method_display = "门内开锁"
-            elif method == "fingerprint":
-                method_display = "指纹开锁"
-            elif method == "password":
-                method_display = "密码开锁"
-            
-            _LOGGER.info(
-                "门锁状态更新: %s - 开锁 (方法: %s)",
-                self._name,
-                method_display
-            )
-            self.async_write_ha_state()
-            
-            # 取消之前的定时器
-            if self._cancel_timer:
-                self._cancel_timer()
-            
-            # 5秒后自动恢复为关锁状态
-            self._cancel_timer = self.hass.loop.call_later(
-                5, 
-                self._auto_lock
-            )
+                
+                _LOGGER.info(
+                    "门内开锁状态更新: %s - 开锁",
+                    self._name
+                )
+                self.async_write_ha_state()
+                
+                # 取消之前的定时器
+                if self._cancel_timer:
+                    self._cancel_timer()
+                
+                # 5秒后自动恢复为关闭状态
+                self._cancel_timer = self.hass.loop.call_later(
+                    5, 
+                    self._auto_lock
+                )
 
     @callback
     def _auto_lock(self):
-        """自动恢复为关锁状态"""
+        """自动恢复为关闭状态"""
         self._is_unlocked = False
-        _LOGGER.info("门锁状态更新: %s - 自动恢复为关锁", self._name)
+        _LOGGER.info("门内开锁状态更新: %s - 自动恢复为关闭", self._name)
         self.async_write_ha_state()
         self._cancel_timer = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """处理协调器更新"""
+        # 监听开门事件
+        if not hasattr(self, "_event_listener"):
+            self._event_listener = self.hass.bus.async_listen(
+                EVENT_DOOR_UNLOCK, 
+                self._handle_door_unlock_event
+            )
+        self.async_write_ha_state()
+
+    async def async_added_to_hass(self):
+        """当实体添加到Home Assistant时"""
+        await super().async_added_to_hass()
+        # 监听开门事件
+        self._event_listener = self.hass.bus.async_listen(
+            EVENT_DOOR_UNLOCK, 
+            self._handle_door_unlock_event
+        )
+
+
+class OutsideDoorUnlockSensor(CoordinatorEntity, BinarySensorEntity):
+    """门外开门状态传感器"""
+
+    def __init__(self, coordinator: DingDingCoordinator, uid: str, name: str):
+        super().__init__(coordinator)
+        self._uid = uid
+        self._name = name
+        self._attr_unique_id = f"{DOMAIN}_{uid}_outside_door_unlock"
+        self._attr_name = f"{name} 门外开门状态"
+        self._attr_icon = "mdi:door-open"
+        self._is_unlocked = False
+        self._last_unlock_time = None
+        self._cancel_timer = None
+
+    @property
+    def is_on(self):
+        """返回门外开门状态（True表示门外开锁）"""
+        return self._is_unlocked
+
+    @callback
+    def _handle_door_unlock_event(self, event: Event):
+        """处理门外开锁事件"""
+        if event.data.get("uid") == self._uid:
+            method = event.data.get("method", "unknown")
+            
+            # 只处理门外开锁事件（指纹、密码）
+            if method in ["fingerprint", "password"]:
+                self._is_unlocked = True
+                self._last_unlock_time = datetime.now()
+                
+                method_display = method
+                if method == "fingerprint":
+                    method_display = "指纹开锁"
+                elif method == "password":
+                    method_display = "密码开锁"
+                
+                _LOGGER.info(
+                    "门外开门状态更新: %s - 开锁 (方法: %s)",
+                    self._name,
+                    method_display
+                )
+                self.async_write_ha_state()
+                
+                # 取消之前的定时器
+                if self._cancel_timer:
+                    self._cancel_timer()
+                
+                # 5秒后自动恢复为关闭状态
+                self._cancel_timer = self.hass.loop.call_later(
+                    5, 
+                    self._auto_reset
+                )
+
+    @callback
+    def _auto_reset(self):
+        """自动恢复为关闭状态"""
+        self._is_unlocked = False
+        _LOGGER.info("门外开门状态更新: %s - 自动恢复为关闭", self._name)
+        self.async_write_ha_state()
+        self._cancel_timer = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """处理协调器更新"""
+        # 监听开门事件
+        if not hasattr(self, "_event_listener"):
+            self._event_listener = self.hass.bus.async_listen(
+                EVENT_DOOR_UNLOCK, 
+                self._handle_door_unlock_event
+            )
+        self.async_write_ha_state()
 
     async def async_added_to_hass(self):
         """当实体添加到Home Assistant时"""
