@@ -6,13 +6,25 @@
 set -e
 
 # 配置
-VERSION="1.0.12"
 PACKAGE_NAME="dingding_smart"
 ZIP_NAME="${PACKAGE_NAME}.zip"
+
+# 从manifest.json读取版本号
+if [ -f "custom_components/${PACKAGE_NAME}/manifest.json" ]; then
+    VERSION=$(grep '"version":' custom_components/${PACKAGE_NAME}/manifest.json | sed 's/.*"version": "\([^"]*\)".*/\1/')
+    if [ -z "$VERSION" ]; then
+        echo "❌ 无法从manifest.json读取版本号，使用默认版本"
+        VERSION="1.0.0"
+    fi
+else
+    echo "❌ manifest.json文件不存在，使用默认版本"
+    VERSION="1.0.0"
+fi
 
 echo "========================================="
 echo "叮叮智能门铃集成 - 打包脚本"
 echo "========================================="
+echo "版本: ${VERSION}"
 echo ""
 
 # 清理旧的打包文件

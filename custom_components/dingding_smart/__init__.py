@@ -708,11 +708,16 @@ class PushListener:
                 self._handle_message(cmd, data)
 
                 # 发送心跳响应
-                self._send_heartbeat()
+                if self._ssl_socket:
+                    self._send_heartbeat()
 
             except socket.timeout:
                 _LOGGER.info("发送心跳包")
-                self._send_heartbeat()
+                if self._ssl_socket:
+                    self._send_heartbeat()
+                else:
+                    _LOGGER.warning("连接已断开，无法发送心跳包")
+                    break
             except (ConnectionResetError, BrokenPipeError):
                 _LOGGER.warning("连接丢失")
                 break
@@ -792,11 +797,21 @@ class PushListener:
         alert = push_info.get("alert", "")
         name = push_info.get("name", "")
 
+        # 检查aps字段中的消息内容
+        if "aps" in push_info:
+            aps = push_info.get("aps", {})
+            if message == "" and "message" in aps:
+                message = aps.get("message", "")
+            if alert == "" and "alert" in aps:
+                alert = aps.get("alert", "")
+            if name == "" and "name" in aps:
+                name = aps.get("name", "")
+
         # 过滤设备UID
         if self.device_uid and uid != self.device_uid:
             return
 
-        _LOGGER.info("处理推送事件: type=%s, uid=%s, message=%s", event_type, uid, message)
+        _LOGGER.info("处理推送事件: type=%s, uid=%s, message=%s, alert=%s, name=%s", event_type, uid, message, alert, name)
 
         # 触发Home Assistant事件
         if event_type == PUSH_TYPE_FINGERPRINT_UNLOCK:
@@ -822,13 +837,14 @@ class PushListener:
                 },
             )
         elif event_type == PUSH_TYPE_LOCK:
-            # 门锁事件 - 从message中判断开锁方法
+            # 门锁事件 - 从message或alert中判断开锁方法
             unlock_method = "lock"
-            if "指纹开锁" in message:
+            combined_message = message + " " + alert
+            if "指纹开锁" in combined_message:
                 unlock_method = "fingerprint"
-            elif "密码开锁" in message:
+            elif "密码开锁" in combined_message:
                 unlock_method = "password"
-            elif "门内开锁" in message:
+            elif "门内开锁" in combined_message:
                 unlock_method = "inside_lock"
                 
             self._fire_event(
