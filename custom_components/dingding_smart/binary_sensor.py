@@ -123,7 +123,7 @@ class OutsideDoorUnlockSensor(CoordinatorEntity, BinarySensorEntity):
         self._uid = uid
         self._name = name
         self._attr_unique_id = f"{DOMAIN}_{uid}_outside_door_unlock"
-        self._attr_name = f"{name} 门外开门状态"
+        self._attr_name = f"{name} 门外开锁状态"
         self._attr_icon = "mdi:door-open"
         self._is_unlocked = False
         self._last_unlock_time = None
