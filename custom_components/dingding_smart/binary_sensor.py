@@ -78,7 +78,7 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
                 
                 # 取消之前的定时器
                 if self._cancel_timer:
-                    self._cancel_timer()
+                    self._cancel_timer.cancel()
                 
                 # 5秒后自动恢复为关闭状态
                 self._cancel_timer = self.hass.loop.call_later(
@@ -160,7 +160,7 @@ class OutsideDoorUnlockSensor(CoordinatorEntity, BinarySensorEntity):
                 
                 # 取消之前的定时器
                 if self._cancel_timer:
-                    self._cancel_timer()
+                    self._cancel_timer.cancel()
                 
                 # 5秒后自动恢复为关闭状态
                 self._cancel_timer = self.hass.loop.call_later(
