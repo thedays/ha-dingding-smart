@@ -709,12 +709,16 @@ class PushListener:
 
                 # 发送心跳响应
                 if self._ssl_socket:
-                    self._send_heartbeat()
+                    if not self._send_heartbeat():
+                        _LOGGER.warning("发送心跳响应失败，连接可能已断开")
+                        break
 
             except socket.timeout:
                 _LOGGER.info("发送心跳包")
                 if self._ssl_socket:
-                    self._send_heartbeat()
+                    if not self._send_heartbeat():
+                        _LOGGER.warning("发送心跳包失败，连接可能已断开")
+                        break
                 else:
                     _LOGGER.warning("连接已断开，无法发送心跳包")
                     break
@@ -1058,9 +1062,9 @@ class PushListener:
                 self._disconnect()
                 return False
 
-    def _send_heartbeat(self):
+    def _send_heartbeat(self) -> bool:
         """发送心跳包"""
-        self._send_message(self.CMD_HEARTBEAT, b"")
+        return self._send_message(self.CMD_HEARTBEAT, b"")
 
     def _receive_data(self, length: int) -> bytes:
         """接收指定长度的数据"""
