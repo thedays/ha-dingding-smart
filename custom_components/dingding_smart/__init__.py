@@ -1070,10 +1070,15 @@ class PushListener:
         """接收指定长度的数据"""
         data = b""
         while len(data) < length:
-            chunk = self._ssl_socket.recv(length - len(data))
-            if not chunk:
+            try:
+                chunk = self._ssl_socket.recv(length - len(data))
+                if not chunk:
+                    return None
+                data += chunk
+            except (OSError, BrokenPipeError) as e:
+                _LOGGER.error("接收数据失败: %s", e)
+                self._disconnect()
                 return None
-            data += chunk
         return data
 
 
