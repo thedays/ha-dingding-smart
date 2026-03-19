@@ -1049,6 +1049,7 @@ class PushListener:
         """发送消息到服务器"""
         with self._socket_lock:
             if not self._ssl_socket:
+                _LOGGER.debug("无法发送消息: 连接未建立")
                 return False
 
             try:
@@ -1057,8 +1058,12 @@ class PushListener:
                 self._ssl_socket.sendall(header + data)
                 _LOGGER.debug("发送命令: %d, 长度: %d", cmd, len(data))
                 return True
-            except (OSError, BrokenPipeError) as e:
+            except (OSError, BrokenPipeError, ConnectionResetError, ssl.SSLError) as e:
                 _LOGGER.error("发送失败: %s", e)
+                self._disconnect()
+                return False
+            except Exception as e:
+                _LOGGER.error("发送消息时发生未知错误: %s", e)
                 self._disconnect()
                 return False
 
