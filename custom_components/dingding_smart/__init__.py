@@ -702,7 +702,13 @@ class PushListener:
                 _LOGGER.debug("收到命令: %d, 长度: %d", cmd, length)
 
                 # 接收消息体
-                data = self._receive_data(length) if length > 0 else b""
+                if length > 0:
+                    data = self._receive_data(length)
+                    if data is None:
+                        _LOGGER.warning("接收消息体失败，连接可能已断开")
+                        break
+                else:
+                    data = b""
 
                 # 处理消息
                 self._handle_message(cmd, data)
@@ -1078,10 +1084,15 @@ class PushListener:
             try:
                 chunk = self._ssl_socket.recv(length - len(data))
                 if not chunk:
+                    _LOGGER.warning("接收数据时连接关闭")
                     return None
                 data += chunk
-            except (OSError, BrokenPipeError) as e:
+            except (OSError, BrokenPipeError, ConnectionResetError, ssl.SSLError) as e:
                 _LOGGER.error("接收数据失败: %s", e)
+                self._disconnect()
+                return None
+            except Exception as e:
+                _LOGGER.error("接收数据时发生未知错误: %s", e)
                 self._disconnect()
                 return None
         return data
