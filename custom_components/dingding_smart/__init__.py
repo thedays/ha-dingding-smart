@@ -607,16 +607,29 @@ class PushListener:
         PushListener.release = False
         _LOGGER.info("推送线程已启动")
 
+        retry_interval = 2  # 初始重试间隔（秒）
+        max_retry_interval = 60  # 最大重试间隔（秒）
+
         while not self._stop_event.is_set():
             try:
                 # 建立连接
                 if not self._connect():
-                    time.sleep(2)
+                    _LOGGER.warning("连接失败，%d秒后重试", retry_interval)
+                    time.sleep(retry_interval)
+                    # 指数退避
+                    retry_interval = min(retry_interval * 2, max_retry_interval)
                     continue
+
+                # 连接成功，重置重试间隔
+                retry_interval = 2
 
                 # 发送注册信息
                 if not self._send_register():
+                    _LOGGER.warning("注册失败，%d秒后重试", retry_interval)
                     self._disconnect()
+                    time.sleep(retry_interval)
+                    # 指数退避
+                    retry_interval = min(retry_interval * 2, max_retry_interval)
                     continue
 
                 # 主消息循环
@@ -625,13 +638,17 @@ class PushListener:
             except Exception as e:
                 _LOGGER.error("推送循环异常: %s", e)
                 self._disconnect()
-                time.sleep(5)
+                _LOGGER.warning("异常，%d秒后重试", retry_interval)
+                time.sleep(retry_interval)
+                # 指数退避
+                retry_interval = min(retry_interval * 2, max_retry_interval)
 
         PushListener.release = True
         _LOGGER.info("推送线程已停止")
 
     def _connect(self) -> bool:
         """连接到推送服务器"""
+        client_socket = None
         try:
             _LOGGER.info("连接到推送服务器: %s:%d", self.push_host, self.push_port)
 
@@ -659,6 +676,13 @@ class PushListener:
         except Exception as e:
             _LOGGER.error("连接异常: %s", e)
             return False
+        finally:
+            # 如果连接失败，确保关闭客户端socket
+            if client_socket and not self._ssl_socket:
+                try:
+                    client_socket.close()
+                except:
+                    pass
 
     def _disconnect(self):
         """断开连接"""
