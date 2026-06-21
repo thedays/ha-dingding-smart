@@ -41,9 +41,9 @@ mkdir -p "${TEMP_DIR}"
 echo "✅ 临时目录创建完成"
 echo ""
 
-# 复制文件
+# 复制文件（排除__pycache__目录）
 echo "📦 复制文件..."
-cp custom_components/${PACKAGE_NAME}/* "${TEMP_DIR}/"
+rsync -av --exclude='__pycache__' custom_components/${PACKAGE_NAME}/ "${TEMP_DIR}/"
 cp hacs.json "${TEMP_DIR}/"
 cp README_HACS.md "${TEMP_DIR}/README.md"
 cp LICENSE "${TEMP_DIR}/"

@@ -721,6 +721,9 @@ class PushListener:
                     _LOGGER.warning("服务器关闭连接")
                     break
 
+                if not self._ssl_socket:
+                    break
+
                 # 解析命令和长度（小端序）
                 cmd, length = struct.unpack("<II", header)
                 _LOGGER.debug("收到命令: %d, 长度: %d", cmd, length)
@@ -734,14 +737,19 @@ class PushListener:
                 else:
                     data = b""
 
+                if not self._ssl_socket:
+                    break
+
                 # 处理消息
                 self._handle_message(cmd, data)
 
+                if not self._ssl_socket:
+                    break
+
                 # 发送心跳响应
-                if self._ssl_socket:
-                    if not self._send_heartbeat():
-                        _LOGGER.warning("发送心跳响应失败，连接可能已断开")
-                        break
+                if not self._send_heartbeat():
+                    _LOGGER.warning("发送心跳响应失败，连接可能已断开")
+                    break
 
             except socket.timeout:
                 _LOGGER.info("发送心跳包")
@@ -754,6 +762,12 @@ class PushListener:
                     break
             except (ConnectionResetError, BrokenPipeError):
                 _LOGGER.warning("连接丢失")
+                break
+            except OSError as e:
+                if e.errno == 9:
+                    _LOGGER.warning("文件描述符错误，连接已关闭")
+                else:
+                    _LOGGER.error("消息循环异常: %s", e)
                 break
             except Exception as e:
                 _LOGGER.error("消息循环异常: %s", e)
@@ -1111,7 +1125,14 @@ class PushListener:
                     _LOGGER.warning("接收数据时连接关闭")
                     return None
                 data += chunk
-            except (OSError, BrokenPipeError, ConnectionResetError, ssl.SSLError) as e:
+            except OSError as e:
+                if e.errno == 9:
+                    _LOGGER.warning("文件描述符错误，连接已关闭")
+                else:
+                    _LOGGER.error("接收数据失败: %s", e)
+                self._disconnect()
+                return None
+            except (BrokenPipeError, ConnectionResetError, ssl.SSLError) as e:
                 _LOGGER.error("接收数据失败: %s", e)
                 self._disconnect()
                 return None
