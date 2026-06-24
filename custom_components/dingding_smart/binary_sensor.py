@@ -61,11 +61,16 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
     @callback
     def _handle_door_unlock_event(self, event: Event):
         """处理门内开锁事件"""
-        if event.data.get("uid") == self._uid:
-            method = event.data.get("method", "unknown")
+        event_uid = event.data.get("uid")
+        method = event.data.get("method", "unknown")
+        _LOGGER.info("门内开锁传感器收到事件: uid=%s, method=%s, self._uid=%s", event_uid, method, self._uid)
+        
+        if event_uid == self._uid:
+            _LOGGER.info("门内开锁传感器UID匹配成功")
             
             # 只处理门内开锁事件
             if method == "inside_lock":
+                _LOGGER.info("门内开锁传感器方法匹配成功: %s", method)
                 self._is_unlocked = True
                 self._last_unlock_time = datetime.now()
                 method_display = "门内开锁"
