@@ -863,6 +863,7 @@ class PushListener:
 
         # 触发Home Assistant事件
         if event_type == PUSH_TYPE_FINGERPRINT_UNLOCK:
+            _LOGGER.info("触发指纹开锁事件: %s", EVENT_DOOR_UNLOCK)
             self._fire_event(
                 EVENT_DOOR_UNLOCK,
                 {
@@ -874,6 +875,7 @@ class PushListener:
                 },
             )
         elif event_type == PUSH_TYPE_PASSWORD_UNLOCK:
+            _LOGGER.info("触发密码开锁事件: %s", EVENT_DOOR_UNLOCK)
             self._fire_event(
                 EVENT_DOOR_UNLOCK,
                 {

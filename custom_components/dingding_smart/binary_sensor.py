@@ -97,21 +97,14 @@ class DoorLockSensor(CoordinatorEntity, BinarySensorEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """处理协调器更新"""
-        # 监听开门事件
-        if not hasattr(self, "_event_listener"):
-            self._event_listener = self.hass.bus.async_listen(
-                EVENT_DOOR_UNLOCK, 
-                self._handle_door_unlock_event
-            )
         self.async_write_ha_state()
 
     async def async_added_to_hass(self):
         """当实体添加到Home Assistant时"""
         await super().async_added_to_hass()
         # 监听开门事件
-        self._event_listener = self.hass.bus.async_listen(
-            EVENT_DOOR_UNLOCK, 
-            self._handle_door_unlock_event
+        self.async_on_remove(
+            self.hass.bus.async_listen(EVENT_DOOR_UNLOCK, self._handle_door_unlock_event)
         )
 
 
@@ -137,11 +130,16 @@ class OutsideDoorUnlockSensor(CoordinatorEntity, BinarySensorEntity):
     @callback
     def _handle_door_unlock_event(self, event: Event):
         """处理门外开锁事件"""
-        if event.data.get("uid") == self._uid:
-            method = event.data.get("method", "unknown")
+        event_uid = event.data.get("uid")
+        method = event.data.get("method", "unknown")
+        _LOGGER.info("门外开锁传感器收到事件: uid=%s, method=%s, self._uid=%s", event_uid, method, self._uid)
+        
+        if event_uid == self._uid:
+            _LOGGER.info("门外开锁传感器UID匹配成功")
             
             # 只处理门外开锁事件（指纹、密码）
             if method in ["fingerprint", "password"]:
+                _LOGGER.info("门外开锁传感器方法匹配成功: %s", method)
                 self._is_unlocked = True
                 self._last_unlock_time = datetime.now()
                 
@@ -179,12 +177,6 @@ class OutsideDoorUnlockSensor(CoordinatorEntity, BinarySensorEntity):
     @callback
     def _handle_coordinator_update(self) -> None:
         """处理协调器更新"""
-        # 监听开门事件
-        if not hasattr(self, "_event_listener"):
-            self._event_listener = self.hass.bus.async_listen(
-                EVENT_DOOR_UNLOCK, 
-                self._handle_door_unlock_event
-            )
         self.async_write_ha_state()
 
     async def async_added_to_hass(self):
