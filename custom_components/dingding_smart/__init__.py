@@ -887,14 +887,22 @@ class PushListener:
                 },
             )
         elif event_type == PUSH_TYPE_LOCK:
-            # 门锁事件 - 从message或alert中判断开锁方法
+            # 门锁事件 - 从message或alert中判断开锁方法（支持中英文）
             unlock_method = "lock"
             combined_message = message + " " + alert
+            # 中文关键词
             if "指纹开锁" in combined_message:
                 unlock_method = "fingerprint"
             elif "密码开锁" in combined_message:
                 unlock_method = "password"
             elif "门内开锁" in combined_message:
+                unlock_method = "inside_lock"
+            # 英文关键词
+            elif "Finger Unlock" in combined_message:
+                unlock_method = "fingerprint"
+            elif "Password Unlock" in combined_message:
+                unlock_method = "password"
+            elif "Inside Unlock" in combined_message:
                 unlock_method = "inside_lock"
                 
             self._fire_event(
